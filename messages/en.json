@@ -1,0 +1,24 @@
+{
+  "Nav": {
+    "home": "Home",
+    "features": "Features",
+    "pricing": "Pricing",
+    "dashboard": "Dashboard"
+  },
+  "Hero": {
+    "badge": "Free to Start • No Credit Card Required",
+    "title": "Preserve Your Family Legacy",
+    "subtitle": "Create beautiful, interactive family trees with our easy-to-use editor. Share your family history and connect with loved ones.",
+    "cta_primary": "Start Creating Free",
+    "cta_secondary": "See Features"
+  },
+  "Features": {
+    "heading": "Everything You Need",
+    "subheading": "Powerful features to create and share your family history"
+  },
+  "CTA": {
+    "title": "Start Building Your Family Tree Today",
+    "description": "Join thousands of families preserving their legacy with our free family tree maker. No credit card required.",
+    "button": "Create Your Tree Free"
+  }
+}
