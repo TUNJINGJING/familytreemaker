@@ -7,15 +7,14 @@ import type { FamilyData } from "@/lib/types/family-data";
 import { loadFamilyData, saveFamilyData } from "@/lib/services/storage";
 import { defaultFamilyData } from "@/lib/types/family-data";
 
-// 遵循 SoC: 动态加载 D3.js 组件（避免 SSR）
-const FamilyChart = dynamic(
-  () => import("@/components/family-tree/family-chart"),
+const FamilyChartFull = dynamic(
+  () => import("@/components/family-tree/family-chart-full"),
   { ssr: false, loading: () => <LoadingSpinner /> }
 );
 
 function LoadingSpinner() {
   return (
-    <div className="flex h-screen items-center justify-center bg-gray-900">
+    <div className="flex h-full items-center justify-center bg-gray-900">
       <div className="text-center">
         <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
         <p className="text-white">Loading Family Tree...</p>
@@ -24,26 +23,28 @@ function LoadingSpinner() {
   );
 }
 
-// 遵循 SRP: Editor 页面只负责布局和状态管理
 export default function EditorPage() {
   const locale = useLocale();
   const [familyData, setFamilyData] = useState<FamilyData>(defaultFamilyData);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // 加载数据（遵循 KISS: 简单的数据加载）
+  // 控制面板状态
+  const [showControls, setShowControls] = useState(true);
+  const [cardType, setCardType] = useState<"html" | "svg">("html");
+  const [spacing, setSpacing] = useState({ x: 250, y: 150 });
+  const [fields, setFields] = useState(["first name", "last name", "birthday", "avatar"]);
+
   useEffect(() => {
     const data = loadFamilyData();
     setFamilyData(data);
     setIsLoaded(true);
   }, []);
 
-  // 保存数据（遵循幂等性: 多次保存结果一致）
   const handleDataChange = (newData: FamilyData) => {
     setFamilyData(newData);
     saveFamilyData(newData);
   };
 
-  // 重置树
   const handleReset = () => {
     if (confirm("Are you sure you want to reset your family tree?")) {
       setFamilyData(defaultFamilyData);
@@ -51,7 +52,6 @@ export default function EditorPage() {
     }
   };
 
-  // 导出数据（遵循 YAGNI: 只实现基本导出）
   const handleExport = () => {
     const dataStr = JSON.stringify(familyData, null, 2);
     const dataBlob = new Blob([dataStr], { type: "application/json" });
@@ -69,9 +69,9 @@ export default function EditorPage() {
 
   return (
     <div className="flex h-screen flex-col bg-gray-100">
-      {/* Header Toolbar */}
+      {/* Header */}
       <header className="border-b border-gray-300 bg-white shadow-sm">
-        <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-6">
+        <div className="mx-auto flex h-16 max-w-full items-center justify-between px-6">
           <div className="flex items-center gap-4">
             <a
               href={`/${locale}`}
@@ -82,6 +82,12 @@ export default function EditorPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowControls(!showControls)}
+              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              {showControls ? "Hide" : "Show"} Controls
+            </button>
             <button
               onClick={handleExport}
               className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
@@ -98,35 +104,155 @@ export default function EditorPage() {
         </div>
       </header>
 
-      {/* Main Editor Area */}
-      <main className="flex-1 overflow-hidden">
-        <div className="h-full p-6">
-          <div className="h-full rounded-lg border-2 border-gray-300 bg-white shadow-lg overflow-hidden">
-            {/* 遵循 SoC: 可视化逻辑委托给 FamilyChart 组件 */}
-            <FamilyChart data={familyData} onDataChange={handleDataChange} />
-          </div>
-        </div>
-      </main>
+      {/* Main Content */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Control Panel Sidebar */}
+        {showControls && (
+          <aside className="w-80 border-r border-gray-300 bg-white overflow-y-auto">
+            <div className="p-6 space-y-6">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 mb-4">Settings</h2>
+              </div>
 
-      {/* Footer Instructions */}
-      <footer className="border-t border-gray-300 bg-white py-4">
-        <div className="mx-auto max-w-[1400px] px-6">
-          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-600">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold">💡 Tip:</span>
-              <span>Click on a person to edit or add family members</span>
+              {/* Card Style */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Card Style
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCardType("html")}
+                    className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      cardType === "html"
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    HTML Cards
+                  </button>
+                  <button
+                    onClick={() => setCardType("svg")}
+                    className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      cardType === "svg"
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    SVG Cards
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  HTML cards support more customization. SVG cards are more performant.
+                </p>
+              </div>
+
+              {/* Spacing Controls */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Card Spacing
+                </label>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">
+                      Horizontal Spacing: {spacing.x}px
+                    </label>
+                    <input
+                      type="range"
+                      min="100"
+                      max="400"
+                      value={spacing.x}
+                      onChange={(e) =>
+                        setSpacing({ ...spacing, x: parseInt(e.target.value) })
+                      }
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">
+                      Vertical Spacing: {spacing.y}px
+                    </label>
+                    <input
+                      type="range"
+                      min="100"
+                      max="300"
+                      value={spacing.y}
+                      onChange={(e) =>
+                        setSpacing({ ...spacing, y: parseInt(e.target.value) })
+                      }
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Fields Configuration */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Display Fields
+                </label>
+                <div className="space-y-2">
+                  {["first name", "last name", "birthday", "avatar", "gender"].map((field) => (
+                    <label key={field} className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={fields.includes(field)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFields([...fields, field]);
+                          } else {
+                            setFields(fields.filter((f) => f !== field));
+                          }
+                        }}
+                        className="mr-2"
+                      />
+                      <span className="text-sm text-gray-700 capitalize">{field}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  Select which fields to show on the cards and in the edit form.
+                </p>
+              </div>
+
+              {/* Info Section */}
+              <div className="pt-6 border-t border-gray-200">
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">How to Use</h3>
+                <ul className="space-y-2 text-xs text-gray-600">
+                  <li className="flex items-start">
+                    <span className="mr-2">👆</span>
+                    <span>Click on a person to view/edit details</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2">➕</span>
+                    <span>Use the + buttons to add family members</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2">🖱️</span>
+                    <span>Drag to pan, scroll to zoom</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2">💾</span>
+                    <span>Changes auto-save to your browser</span>
+                  </li>
+                </ul>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold">🖱️</span>
-              <span>Drag to pan • Scroll to zoom</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold">💾</span>
-              <span>Auto-saves to your browser</span>
-            </div>
+          </aside>
+        )}
+
+        {/* Chart Area */}
+        <main className="flex-1 overflow-hidden">
+          <div className="h-full">
+            <FamilyChartFull
+              data={familyData}
+              onDataChange={handleDataChange}
+              cardType={cardType}
+              cardSpacing={spacing}
+              fields={fields}
+            />
           </div>
-        </div>
-      </footer>
+        </main>
+      </div>
     </div>
   );
 }
