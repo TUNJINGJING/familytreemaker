@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
+import LanguageSelector from "@/components/language-selector";
 
 export default function Navbar() {
   const { data: session } = useSession();
@@ -54,11 +55,14 @@ export default function Navbar() {
             )}
           </nav>
 
-          {/* CTA Button */}
-          <div className="flex items-center gap-6 text-xs font-bold tracking-widest uppercase">
+          {/* Language Selector & CTA */}
+          <div className="flex items-center gap-4">
+            <div className="hidden md:block">
+              <LanguageSelector />
+            </div>
             <a
               href={`/${locale}/editor`}
-              className="hidden md:block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="hidden md:block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-bold tracking-widest uppercase"
             >
               Start Free
             </a>
@@ -108,6 +112,9 @@ export default function Navbar() {
             >
               Start Free
             </a>
+            <div className="pt-4 border-t border-gray-300">
+              <LanguageSelector />
+            </div>
           </nav>
         </div>
       )}
