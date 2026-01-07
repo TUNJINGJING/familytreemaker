@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import type { FamilyData } from "@/lib/types/family-data";
 import { loadFamilyData, saveFamilyData } from "@/lib/services/storage";
 import { defaultFamilyData } from "@/lib/types/family-data";
+import ControlPanel, { ChartConfig, defaultConfig } from "@/components/family-tree/control-panel";
 
 const FamilyChartFull = dynamic(
   () => import("@/components/family-tree/family-chart-full"),
@@ -14,7 +15,7 @@ const FamilyChartFull = dynamic(
 
 function LoadingSpinner() {
   return (
-    <div className="flex h-full items-center justify-center bg-gray-900">
+    <div className="flex h-full items-center justify-center bg-[rgb(33,33,33)]">
       <div className="text-center">
         <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
         <p className="text-white">Loading Family Tree...</p>
@@ -27,12 +28,8 @@ export default function EditorPage() {
   const locale = useLocale();
   const [familyData, setFamilyData] = useState<FamilyData>(defaultFamilyData);
   const [isLoaded, setIsLoaded] = useState(false);
-
-  // 控制面板状态
   const [showControls, setShowControls] = useState(true);
-  const [cardType, setCardType] = useState<"html" | "svg">("html");
-  const [spacing, setSpacing] = useState({ x: 250, y: 150 });
-  const [fields, setFields] = useState(["first name", "last name", "birthday", "avatar"]);
+  const [config, setConfig] = useState<ChartConfig>(defaultConfig);
 
   useEffect(() => {
     const data = loadFamilyData();
@@ -49,6 +46,8 @@ export default function EditorPage() {
     if (confirm("Are you sure you want to reset your family tree?")) {
       setFamilyData(defaultFamilyData);
       saveFamilyData(defaultFamilyData);
+      // Force re-render by reloading the page
+      window.location.reload();
     }
   };
 
@@ -68,14 +67,14 @@ export default function EditorPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-gray-100">
+    <div className="flex h-screen flex-col bg-[rgb(33,33,33)]">
       {/* Header */}
-      <header className="border-b border-gray-300 bg-white shadow-sm">
-        <div className="mx-auto flex h-16 max-w-full items-center justify-between px-6">
+      <header className="border-b border-gray-700 bg-[rgb(40,40,40)] shadow-sm">
+        <div className="mx-auto flex h-14 max-w-full items-center justify-between px-4">
           <div className="flex items-center gap-4">
             <a
               href={`/${locale}`}
-              className="text-xl font-bold text-gray-900 hover:text-blue-600"
+              className="text-lg font-bold text-white hover:text-blue-400"
             >
               ← Back to Home
             </a>
@@ -84,19 +83,19 @@ export default function EditorPage() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowControls(!showControls)}
-              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="rounded-lg border border-gray-600 bg-[rgb(50,50,50)] px-4 py-2 text-sm font-medium text-white hover:bg-[rgb(60,60,60)]"
             >
               {showControls ? "Hide" : "Show"} Controls
             </button>
             <button
               onClick={handleExport}
-              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="rounded-lg border border-gray-600 bg-[rgb(50,50,50)] px-4 py-2 text-sm font-medium text-white hover:bg-[rgb(60,60,60)]"
             >
               Export JSON
             </button>
             <button
               onClick={handleReset}
-              className="rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+              className="rounded-lg border border-red-600 bg-transparent px-4 py-2 text-sm font-medium text-red-500 hover:bg-red-600 hover:text-white"
             >
               Reset Tree
             </button>
@@ -108,149 +107,16 @@ export default function EditorPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Control Panel Sidebar */}
         {showControls && (
-          <aside className="w-80 border-r border-gray-300 bg-white overflow-y-auto">
-            <div className="p-6 space-y-6">
-              <div>
-                <h2 className="text-lg font-bold text-gray-900 mb-4">Settings</h2>
-              </div>
-
-              {/* Card Style */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Card Style
-                </label>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setCardType("html")}
-                    className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      cardType === "html"
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    HTML Cards
-                  </button>
-                  <button
-                    onClick={() => setCardType("svg")}
-                    className={`flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      cardType === "svg"
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    SVG Cards
-                  </button>
-                </div>
-                <p className="mt-2 text-xs text-gray-500">
-                  HTML cards support more customization. SVG cards are more performant.
-                </p>
-              </div>
-
-              {/* Spacing Controls */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Card Spacing
-                </label>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">
-                      Horizontal Spacing: {spacing.x}px
-                    </label>
-                    <input
-                      type="range"
-                      min="100"
-                      max="400"
-                      value={spacing.x}
-                      onChange={(e) =>
-                        setSpacing({ ...spacing, x: parseInt(e.target.value) })
-                      }
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 mb-1">
-                      Vertical Spacing: {spacing.y}px
-                    </label>
-                    <input
-                      type="range"
-                      min="100"
-                      max="300"
-                      value={spacing.y}
-                      onChange={(e) =>
-                        setSpacing({ ...spacing, y: parseInt(e.target.value) })
-                      }
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Fields Configuration */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Display Fields
-                </label>
-                <div className="space-y-2">
-                  {["first name", "last name", "birthday", "avatar", "gender"].map((field) => (
-                    <label key={field} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={fields.includes(field)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setFields([...fields, field]);
-                          } else {
-                            setFields(fields.filter((f) => f !== field));
-                          }
-                        }}
-                        className="mr-2"
-                      />
-                      <span className="text-sm text-gray-700 capitalize">{field}</span>
-                    </label>
-                  ))}
-                </div>
-                <p className="mt-2 text-xs text-gray-500">
-                  Select which fields to show on the cards and in the edit form.
-                </p>
-              </div>
-
-              {/* Info Section */}
-              <div className="pt-6 border-t border-gray-200">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">How to Use</h3>
-                <ul className="space-y-2 text-xs text-gray-600">
-                  <li className="flex items-start">
-                    <span className="mr-2">👆</span>
-                    <span>Click on a person to view/edit details</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2">➕</span>
-                    <span>Use the + buttons to add family members</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2">🖱️</span>
-                    <span>Drag to pan, scroll to zoom</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="mr-2">💾</span>
-                    <span>Changes auto-save to your browser</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </aside>
+          <ControlPanel config={config} onChange={setConfig} />
         )}
 
         {/* Chart Area */}
         <main className="flex-1 overflow-hidden">
-          <div className="h-full">
-            <FamilyChartFull
-              data={familyData}
-              onDataChange={handleDataChange}
-              cardType={cardType}
-              cardSpacing={spacing}
-              fields={fields}
-            />
-          </div>
+          <FamilyChartFull
+            data={familyData}
+            onDataChange={handleDataChange}
+            config={config}
+          />
         </main>
       </div>
     </div>
